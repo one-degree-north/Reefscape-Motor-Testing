@@ -22,12 +22,14 @@ import frc.robot.constants.MotorConfigs;
 public class MotorTesting extends SubsystemBase {
   private TalonFX m_Master;
   private TalonFX m_Slave;
+  private TalonFX m_motorIndependent;
   private VoltageOut voltageOut = new VoltageOut(0);
-  private double voltageInput = 0; //CHANGE THIS TO WHATEVER VOLTAGE YOU WANT TO TEST (MUST BE POSITIVE)
+  private double voltageInput = 0.5; //CHANGE THIS TO WHATEVER VOLTAGE YOU WANT TO TEST (MUST BE POSITIVE)
   
   public MotorTesting() {
-    m_Master = new TalonFX(1, "rio");
-    m_Slave = new TalonFX(2, "rio");
+    m_Master = new TalonFX(19, "rio");
+    m_Slave = new TalonFX(17, "rio");
+    m_motorIndependent = new TalonFX(4, "rio");
     configureClimb();
   }
 
@@ -36,13 +38,14 @@ public class MotorTesting extends SubsystemBase {
     .withCurrentLimits(MotorConfigs.getCurrentLimitConfig("Falcon500")) //SET MOTOR TYEP
     .withMotorOutput(MotorConfigs.getMotorOutputConfigs(
       NeutralModeValue.Coast, InvertedValue.Clockwise_Positive))
-    .withFeedback(MotorConfigs.getFeedbackConfigs(192/1)); //SET GEAR RATIO
+    .withFeedback(MotorConfigs.getFeedbackConfigs(6/1)); //SET GEAR RATIO
 
     Follower followerConfig = new Follower(m_Master.getDeviceID(), true); // CHANGE DEPENDING ON GEARBOX
     m_Slave.setControl(followerConfig);
 
     m_Master.getConfigurator().apply(motorConfigs);
     m_Slave.getConfigurator().apply(motorConfigs);
+    m_motorIndependent.getConfigurator().apply(motorConfigs);
   }
 
   private void setControl(TalonFX motor, ControlRequest req) {
@@ -51,33 +54,42 @@ public class MotorTesting extends SubsystemBase {
     }
  }
 
-  public void climbUp(){
+  public void voltageUp(){
     setControl(m_Master, voltageOut.withOutput(voltageInput));
   }
 
-  public void climbDown(){
+  public void voltageDown(){
     setControl(m_Master, voltageOut.withOutput(-voltageInput));
   }
 
-  public void stopClimb(){
+  public void stopMotor(){
     setControl(m_Master, voltageOut.withOutput(0));
+    setControl(m_motorIndependent, voltageOut.withOutput(0));
+  }
+
+  public Command runIndependent(boolean runOpposite){
+    if (runOpposite){
+      return Commands.run(()-> setControl(m_motorIndependent, voltageOut.withOutput(-3)));
+    } else{
+      return Commands.run(()-> setControl(m_motorIndependent, voltageOut.withOutput(3)));
+    }
   }
 
   public double getVelocity(){
     return m_Master.getVelocity().getValueAsDouble();
   }
 
-  public Command getCommand(ClimbStates wantedState){
-    return Commands.runOnce(() -> climbTransitionHandler(wantedState));
+  public Command getCommand(mechanismStates wantedState){
+    return Commands.run(() -> mechanismTransitionHandler(wantedState));
   }
 
-  public void climbTransitionHandler(ClimbStates state){
+  public void mechanismTransitionHandler(mechanismStates state){
     switch(state){
       case VOLTAGEUP:
-        climbUp();
+        voltageUp();
         break;
       case VOLTAGEDOWN:
-        climbDown();
+        voltageDown();
         break;
     }
   }
@@ -87,7 +99,7 @@ public class MotorTesting extends SubsystemBase {
   public void periodic() {
   }
 
-  public enum ClimbStates{
+  public enum mechanismStates{
     VOLTAGEUP,VOLTAGEDOWN
   }
 }

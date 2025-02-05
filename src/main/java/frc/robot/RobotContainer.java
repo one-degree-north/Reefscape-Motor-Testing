@@ -5,9 +5,10 @@
 package frc.robot;
 
 import frc.robot.commands.Autos;
+import frc.robot.commands.mechanismCommands;
 import frc.robot.subsystems.ExampleSubsystem;
 import frc.robot.subsystems.MotorTesting;
-import frc.robot.subsystems.MotorTesting.ClimbStates;
+import frc.robot.subsystems.MotorTesting.mechanismStates;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandPS5Controller;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -30,6 +31,7 @@ public class RobotContainer {
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     // Configure the trigger bindings
+    s_MotorTesting.stopMotor();
     configureBindings();
   }
 
@@ -43,8 +45,10 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    m_driverController.R1().whileTrue(s_MotorTesting.getCommand(ClimbStates.VOLTAGEUP));
-    m_driverController.R2().whileTrue(s_MotorTesting.getCommand(ClimbStates.VOLTAGEDOWN));
+    m_driverController.R1().whileTrue(new mechanismCommands(s_MotorTesting, mechanismStates.VOLTAGEDOWN));
+    m_driverController.R2().whileTrue(new mechanismCommands(s_MotorTesting, mechanismStates.VOLTAGEUP));
+    m_driverController.L1().whileTrue(s_MotorTesting.runIndependent(false));
+    m_driverController.L2().whileTrue(s_MotorTesting.runIndependent(true));
   }
 
   /**
